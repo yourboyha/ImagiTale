@@ -183,8 +183,8 @@
       // =======================================================
       // ========== CONFIGURATION - PLEASE EDIT ==========
       // =======================================================
-      const GEMINI_API_KEY = "YOUR_API_KEY_HERE";
-      const IMAGEN_API_KEY = "YOUR_API_KEY_HERE";
+      const GEMINI_API_KEY = "AIzaSyDq2bN19KBj3PQYQnb5U4JYHcD5DkZuzmY";
+      const IMAGEN_API_KEY = "AIzaSyDq2bN19KBj3PQYQnb5U4JYHcD5DkZuzmY";
       // =======================================================
 
       // DOM Elements
@@ -309,7 +309,7 @@
       }
 
       async function callGeminiAPI(prompt) {
-        if (GEMINI_API_KEY === "YOUR_API_KEY_HERE") {
+        if (GEMINI_API_KEY === "AIzaSyDq2bN19KBj3PQYQnb5U4JYHcD5DkZuzmY") {
           return "กรุณาใส่ Gemini API Key ในโค้ดก่อนครับ";
         }
         const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${GEMINI_API_KEY}`;
@@ -332,7 +332,7 @@
       }
 
       async function callImagenAPI(prompt) {
-        if (IMAGEN_API_KEY === "YOUR_API_KEY_HERE") {
+        if (IMAGEN_API_KEY === "AIzaSyDq2bN19KBj3PQYQnb5U4JYHcD5DkZuzmY") {
           return "https://placehold.co/512x512/FFE0B2/1A535C?text=Please+Add+API+Key";
         }
         const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${IMAGEN_API_KEY}`;
