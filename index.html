@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ImagiTale - MVP Prototype</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Poppins", sans-serif;
+        background-color: #fff8e1; /* Energetic & Playful Palette - Background */
+      }
+      .btn-primary {
+        background-color: #ff6b6b; /* Energetic & Playful - Red */
+        color: white;
+        transition: background-color 0.3s;
+      }
+      .btn-primary:hover {
+        background-color: #ff4f4f;
+      }
+      .btn-secondary {
+        background-color: #4ecdc4; /* Energetic & Playful - Teal */
+        color: white;
+        transition: background-color 0.3s;
+      }
+      .btn-secondary:hover {
+        background-color: #3db8ae;
+      }
+      .card {
+        background-color: white;
+        border-radius: 1.5rem;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+        border: 2px solid #1a535c; /* Energetic & Playful - Dark Teal */
+      }
+      .text-main {
+        color: #1a535c;
+      }
+      .text-accent {
+        color: #ff6b6b;
+      }
+      .pulse {
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+      .fade-in {
+        animation: fadeIn 1s ease-in-out;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+    </style>
+  </head>
+  <body class="flex items-center justify-center min-h-screen p-4">
+    <div id="app-container" class="w-full max-w-4xl mx-auto">
+      <!-- ===== VOCAB TRAINER VIEW ===== -->
+      <div id="vocab-trainer-view" class="text-center p-6 md:p-10 card">
+        <h1 class="text-3xl md:text-4xl font-bold text-main mb-2">
+          ด่านที่ 1: นักสะสมคำศัพท์
+        </h1>
+        <p class="text-gray-500 mb-8">
+          ฝึกพูดคำศัพท์ให้ถูกต้อง เพื่อปลดล็อกโลกนิทาน!
+        </p>
+
+        <div id="word-display-card" class="bg-yellow-100 p-8 rounded-2xl mb-8">
+          <h2
+            id="current-word"
+            class="text-5xl md:text-7xl font-bold text-main tracking-wider"
+          >
+            WORD
+          </h2>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-4 justify-center mb-8">
+          <button
+            id="listen-btn"
+            class="py-4 px-8 text-xl font-bold rounded-full btn-secondary w-full md:w-auto"
+          >
+            <span>🔈</span> ฟังเสียง
+          </button>
+          <button
+            id="speak-btn"
+            class="py-4 px-8 text-xl font-bold rounded-full btn-primary w-full md:w-auto"
+          >
+            <span>🎙️</span> พูดเลย!
+          </button>
+        </div>
+
+        <p id="feedback-text" class="text-xl h-8 mb-6 text-gray-600"></p>
+
+        <div class="w-full bg-gray-200 rounded-full h-8">
+          <div
+            id="progress-bar"
+            class="bg-yellow-400 h-8 rounded-full text-center text-white font-bold leading-8 transition-all duration-500"
+            style="width: 0%"
+          ></div>
+        </div>
+        <p id="progress-text" class="mt-2 text-lg text-main font-semibold">
+          สะสมครบ 0/5 คำแล้ว!
+        </p>
+      </div>
+
+      <!-- ===== THE BRIDGE VIEW ===== -->
+      <div id="bridge-view" class="hidden text-center p-10 card fade-in">
+        <h1 class="text-4xl font-bold text-accent mb-4">ปลดล็อกสำเร็จ!</h1>
+        <p class="text-xl text-gray-600 mb-8">
+          คุณได้รวบรวมคำศัพท์วิเศษครบแล้ว พร้อมจะสร้างนิทานของคุณเองหรือยัง?
+        </p>
+        <div
+          id="collected-words-display"
+          class="flex flex-wrap gap-4 justify-center mb-8 text-2xl font-semibold"
+        ></div>
+        <button
+          id="create-story-btn"
+          class="py-4 px-12 text-2xl font-bold rounded-full btn-primary animate-bounce"
+        >
+          🚀 สร้างนิทานเลย!
+        </button>
+      </div>
+
+      <!-- ===== STORY VIEW ===== -->
+      <div
+        id="story-view"
+        class="hidden grid grid-cols-1 lg:grid-cols-2 gap-8 items-center p-6 md:p-10 card fade-in"
+      >
+        <div
+          id="image-container"
+          class="w-full aspect-square bg-gray-200 rounded-2xl flex items-center justify-center"
+        >
+          <div id="image-loader" class="text-center">
+            <p class="text-2xl text-main mb-2">🎨</p>
+            <p class="text-xl text-gray-500 pulse">AI กำลังวาดรูป...</p>
+          </div>
+          <img
+            id="story-image"
+            src=""
+            class="hidden w-full h-full object-cover rounded-2xl"
+            alt="AI-generated story illustration"
+          />
+        </div>
+        <div id="story-text-container" class="flex flex-col h-full">
+          <div id="story-loader" class="text-center m-auto">
+            <p class="text-2xl text-main mb-2">✍️</p>
+            <p class="text-xl text-gray-500 pulse">AI กำลังแต่งเรื่อง...</p>
+          </div>
+          <div
+            id="story-content"
+            class="hidden prose lg:prose-xl text-main flex-grow overflow-y-auto"
+          >
+            <p id="story-paragraph"></p>
+          </div>
+          <button
+            id="continue-story-btn"
+            class="hidden mt-6 py-3 px-6 text-lg font-bold rounded-full btn-secondary w-full"
+          >
+            <span>🎙️</span> เล่าเรื่องต่อสิ!
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // =======================================================
+      // ========== CONFIGURATION - PLEASE EDIT ==========
+      // =======================================================
+      // 1. ไปที่ aistudio.google.com เพื่อสร้าง API Key
+      // 2. นำ Key ที่ได้มาใส่ในค่า "" ข้างล่างนี้
+      const GEMINI_API_KEY = "YOUR_API_KEY_HERE";
+      const IMAGEN_API_KEY = "YOUR_API_KEY_HERE"; // อาจจะเป็น Key เดียวกัน
+      // =======================================================
+
+      // DOM Elements
+      const vocabView = document.getElementById("vocab-trainer-view");
+      const bridgeView = document.getElementById("bridge-view");
+      const storyView = document.getElementById("story-view");
+      const currentWordEl = document.getElementById("current-word");
+      const listenBtn = document.getElementById("listen-btn");
+      const speakBtn = document.getElementById("speak-btn");
+      const feedbackText = document.getElementById("feedback-text");
+      const progressBar = document.getElementById("progress-bar");
+      const progressText = document.getElementById("progress-text");
+      const createStoryBtn = document.getElementById("create-story-btn");
+      const collectedWordsDisplay = document.getElementById(
+        "collected-words-display"
+      );
+      const imageLoader = document.getElementById("image-loader");
+      const storyLoader = document.getElementById("story-loader");
+      const storyImage = document.getElementById("story-image");
+      const storyContent = document.getElementById("story-content");
+      const storyParagraph = document.getElementById("story-paragraph");
+      const continueStoryBtn = document.getElementById("continue-story-btn");
+
+      // App State
+      const wordList = [
+        "apple",
+        "bird",
+        "cat",
+        "dog",
+        "egg",
+        "fish",
+        "girl",
+        "house",
+        "ice",
+        "juice",
+      ];
+      let currentWord = "";
+      let collectedWords = [];
+      const wordsToCollect = 5;
+
+      // Web Speech API
+      const synth = window.speechSynthesis;
+      const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.interimResults = false;
+
+      // Functions
+      function loadCollectedWords() {
+        const savedWords = localStorage.getItem("imagitale_words");
+        if (savedWords) {
+          collectedWords = JSON.parse(savedWords);
+        }
+        updateProgress();
+      }
+
+      function saveCollectedWords() {
+        localStorage.setItem("imagitale_words", JSON.stringify(collectedWords));
+      }
+
+      function loadNextWord() {
+        const remainingWords = wordList.filter(
+          (w) => !collectedWords.includes(w)
+        );
+        if (remainingWords.length === 0) {
+          // Reset if all words are learned, for replayability
+          localStorage.clear();
+          collectedWords = [];
+        }
+        const randomIndex = Math.floor(Math.random() * remainingWords.length);
+        currentWord = remainingWords[randomIndex];
+        currentWordEl.textContent = currentWord;
+        feedbackText.textContent = "กดปุ่ม 🎙️ แล้วพูดเลย!";
+      }
+
+      function updateProgress() {
+        const progress = (collectedWords.length / wordsToCollect) * 100;
+        progressBar.style.width = `${progress}%`;
+        progressBar.textContent = `${collectedWords.length}/${wordsToCollect}`;
+        progressText.textContent = `สะสมครบ ${collectedWords.length}/${wordsToCollect} คำแล้ว!`;
+
+        if (collectedWords.length >= wordsToCollect) {
+          showBridgeView();
+        }
+      }
+
+      function showBridgeView() {
+        vocabView.classList.add("hidden");
+        storyView.classList.add("hidden");
+        bridgeView.classList.remove("hidden");
+        collectedWordsDisplay.innerHTML = "";
+        collectedWords.slice(0, wordsToCollect).forEach((word) => {
+          const wordChip = document.createElement("span");
+          wordChip.className =
+            "bg-yellow-200 text-yellow-800 py-2 px-4 rounded-full";
+          wordChip.textContent = word;
+          collectedWordsDisplay.appendChild(wordChip);
+        });
+      }
+
+      function handleCorrectAnswer() {
+        if (!collectedWords.includes(currentWord)) {
+          collectedWords.push(currentWord);
+          saveCollectedWords();
+          updateProgress();
+        }
+        feedbackText.textContent = `เยี่ยมมาก! "${currentWord}" ถูกต้อง`;
+        feedbackText.classList.remove("text-red-500");
+        feedbackText.classList.add("text-green-500");
+        setTimeout(() => {
+          if (collectedWords.length < wordsToCollect) loadNextWord();
+        }, 1500);
+      }
+
+      function handleWrongAnswer(transcript) {
+        feedbackText.textContent = `เกือบถูกแล้ว! ลองอีกครั้งนะ (คุณพูดว่า: ${transcript})`;
+        feedbackText.classList.remove("text-green-500");
+        feedbackText.classList.add("text-red-500");
+      }
+
+      async function callGeminiAPI(prompt) {
+        if (GEMINI_API_KEY === "YOUR_API_KEY_HERE") {
+          return "กรุณาใส่ Gemini API Key ในโค้ดก่อนครับ";
+        }
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${GEMINI_API_KEY}`;
+        try {
+          const response = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+          });
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error.message);
+          }
+          const data = await response.json();
+          return data.candidates[0].content.parts[0].text;
+        } catch (error) {
+          console.error("Gemini API Error:", error);
+          return `เกิดข้อผิดพลาดในการเรียก Gemini: ${error.message}`;
+        }
+      }
+
+      // NOTE: For simplicity, we are using the Gemini model endpoint for Imagen 3 as well.
+      // In a real application, you might use a dedicated image generation model endpoint.
+      async function callImagenAPI(prompt) {
+        if (IMAGEN_API_KEY === "AIzaSyDq2bN19KBj3PQYQnb5U4JYHcD5DkZuzmY") {
+          return "https://placehold.co/512x512/FFE0B2/1A535C?text=Please+Add+API+Key";
+        }
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${IMAGEN_API_KEY}`;
+        try {
+          const response = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              instances: [{ prompt: prompt }],
+              parameters: { sampleCount: 1 },
+            }),
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error.message);
+          }
+          const data = await response.json();
+          if (data.predictions && data.predictions.length > 0) {
+            return `data:image/png;base64,${data.predictions[0].bytesBase64Encoded}`;
+          } else {
+            throw new Error("No image data returned from API.");
+          }
+        } catch (error) {
+          console.error("Imagen API Error:", error);
+          return `https://placehold.co/512x512/FFCDD2/B71C1C?text=API+Error`;
+        }
+      }
+
+      async function generateStory() {
+        vocabView.classList.add("hidden");
+        bridgeView.classList.add("hidden");
+        storyView.classList.remove("hidden");
+
+        const storyKeywords = collectedWords
+          .slice(0, wordsToCollect)
+          .join(", ");
+        const storyPrompt = `Create a very short, simple, and happy story for a 5-year-old child. The story must include these 5 words: ${storyKeywords}. The story should end with an open question for the child to answer.`;
+
+        const storyText = await callGeminiAPI(storyPrompt);
+        storyParagraph.textContent = storyText;
+        storyLoader.classList.add("hidden");
+        storyContent.classList.remove("hidden");
+        continueStoryBtn.classList.remove("hidden");
+
+        const imagePrompt = `A cute, vibrant, cartoon-style illustration for a children's book. The scene should be based on this story: "${storyText}". Simple background, happy characters.`;
+        const imageUrl = await callImagenAPI(imagePrompt);
+        storyImage.src = imageUrl;
+        imageLoader.classList.add("hidden");
+        storyImage.classList.remove("hidden");
+      }
+
+      // Event Listeners
+      listenBtn.addEventListener("click", () => {
+        const utterance = new SpeechSynthesisUtterance(currentWord);
+        utterance.lang = "en-US";
+        synth.speak(utterance);
+      });
+
+      speakBtn.addEventListener("click", () => {
+        feedbackText.textContent = "กำลังฟังอยู่จ้า...";
+        recognition.start();
+      });
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript
+          .toLowerCase()
+          .replace(/[\.\,\?]/g, "");
+        if (transcript === currentWord) {
+          handleCorrectAnswer();
+        } else {
+          handleWrongAnswer(transcript);
+        }
+      };
+
+      recognition.onerror = (event) => {
+        feedbackText.textContent =
+          "อุ๊ปส์! ไม่ได้ยินเสียงเลย ลองใหม่อีกครั้งนะ";
+      };
+
+      createStoryBtn.addEventListener("click", generateStory);
+
+      continueStoryBtn.addEventListener("click", () => {
+        // For the MVP, this button can just re-enable speech recognition
+        // In a full version, it would start a new turn in the story
+        alert("ฟีเจอร์เล่าเรื่องต่อจะมาในเวอร์ชันเต็มนะครับ!");
+      });
+
+      // Initial Load
+      loadCollectedWords();
+      if (collectedWords.length < wordsToCollect) {
+        loadNextWord();
+      } else {
+        showBridgeView();
+      }
+    </script>
+  </body>
+</html>
