@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ImagiTale - MVP Prototype (with Audio Feedback)</title>
+    <title>ImagiTale - Production Version</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -219,13 +219,6 @@
     </div>
 
     <script>
-      // =======================================================
-      // ========== CONFIGURATION - PLEASE EDIT ==========
-      // =======================================================
-      const GEMINI_API_KEY = "YOUR_API_KEY_HERE";
-      const IMAGEN_API_KEY = "YOUR_API_KEY_HERE";
-      // =======================================================
-
       // DOM Elements
       const vocabView = document.getElementById("vocab-trainer-view");
       const bridgeView = document.getElementById("bridge-view");
@@ -399,7 +392,7 @@
           () => feedbackText.classList.remove("feedback-animation"),
           { once: true }
         );
-        speak("เก่งมาก"); // MODIFIED: Added audio feedback
+        speak("เก่งมาก");
 
         setTimeout(() => {
           if (collectedWords.length < wordsToCollect) loadNextWord();
@@ -415,7 +408,7 @@
           () => feedbackText.classList.remove("feedback-animation"),
           { once: true }
         );
-        speak("ลองอีกครั้งนะ"); // MODIFIED: Added audio feedback
+        speak("ลองอีกครั้งนะ");
       }
 
       function resetProgress() {
@@ -428,54 +421,48 @@
         feedbackText.className = "text-xl h-8 mb-6 font-bold text-gray-500";
       }
 
-      async function callGeminiAPI(prompt) {
-        if (GEMINI_API_KEY === "YOUR_API_KEY_HERE")
-          return "กรุณาใส่ Gemini API Key ในโค้ดก่อนครับ";
-        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${GEMINI_API_KEY}`;
+      // =======================================================
+      // ========== SECURE API CALLS VIA NETLIFY ==========
+      // =======================================================
+      async function callAI(type, prompt) {
         try {
-          const response = await fetch(API_URL, {
+          const response = await fetch("/.netlify/functions/callAI", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+            body: JSON.stringify({ type, prompt }),
           });
-          if (!response.ok)
-            throw new Error(`HTTP error! status: ${response.status}`);
+
           const data = await response.json();
-          return data.candidates[0].content.parts[0].text;
+
+          if (!response.ok) {
+            throw new Error(data.error || "Serverless function failed");
+          }
+          return data;
         } catch (error) {
-          console.error("Gemini API Error:", error);
-          return `เกิดข้อผิดพลาดในการเรียก Gemini: ${error.message}`;
+          console.error(`Error calling AI via function:`, error);
+          return { error: { message: error.message } };
         }
       }
 
+      async function callGeminiAPI(prompt) {
+        const data = await callAI("gemini", prompt);
+        if (data.error) {
+          return `เกิดข้อผิดพลาดในการเรียก Gemini: ${data.error.message}`;
+        }
+        return data.candidates[0].content.parts[0].text;
+      }
+
       async function callImagenAPI(prompt) {
-        if (IMAGEN_API_KEY === "YOUR_API_KEY_HERE")
-          return "https://placehold.co/512x512/FFE0B2/1A535C?text=Please+Add+API+Key";
-        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${IMAGEN_API_KEY}`;
-        try {
-          const response = await fetch(API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              instances: [{ prompt: prompt }],
-              parameters: { sampleCount: 1 },
-            }),
-          });
-          if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error.message);
-          }
-          const data = await response.json();
-          if (data.predictions && data.predictions.length > 0) {
-            return `data:image/png;base64,${data.predictions[0].bytesBase64Encoded}`;
-          } else {
-            throw new Error("No image data returned from API.");
-          }
-        } catch (error) {
-          console.error("Imagen API Error:", error);
+        const data = await callAI("imagen", prompt);
+        if (data.error) {
           return `https://placehold.co/512x512/FFCDD2/B71C1C?text=API+Error`;
         }
+        if (data.predictions && data.predictions.length > 0) {
+          return `data:image/png;base64,${data.predictions[0].bytesBase64Encoded}`;
+        }
+        return `https://placehold.co/512x512/FFCDD2/B71C1C?text=No+Image`;
       }
+      // =======================================================
 
       async function generateStory() {
         vocabView.classList.add("hidden");
