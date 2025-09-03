@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ImagiTale - MVP Prototype (with Enhanced Feedback)</title>
+    <title>ImagiTale - MVP Prototype (Fixed Reset Button)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -74,7 +74,6 @@
         }
       }
 
-      /* NEW: Feedback Animation */
       @keyframes feedback-pop {
         0% {
           transform: scale(1);
@@ -88,6 +87,16 @@
       }
       .feedback-animation {
         animation: feedback-pop 0.5s ease-in-out;
+      }
+      .reset-button {
+        margin-top: 1.5rem;
+        font-size: 0.875rem;
+        color: #9ca3af; /* gray-400 */
+        text-decoration: underline;
+        transition: color 0.3s;
+      }
+      .reset-button:hover {
+        color: #ef4444; /* red-500 */
       }
     </style>
   </head>
@@ -140,7 +149,10 @@
         <p id="progress-text" class="mt-2 text-lg text-main font-semibold">
           สะสมครบ 0/5 คำแล้ว!
         </p>
+
+        <button class="reset-button">เริ่มสะสมใหม่ทั้งหมด</button>
       </div>
+
       <div id="bridge-view" class="hidden text-center p-10 card fade-in">
         <h1 class="text-4xl font-bold text-accent mb-4">ปลดล็อกสำเร็จ!</h1>
         <p class="text-xl text-gray-600 mb-8">
@@ -156,6 +168,7 @@
         >
           🚀 สร้างนิทานเลย!
         </button>
+        <button class="reset-button">หรือจะเริ่มสะสมคำศัพท์ชุดใหม่?</button>
       </div>
       <div
         id="story-view"
@@ -187,12 +200,20 @@
           >
             <p id="story-paragraph"></p>
           </div>
-          <button
-            id="continue-story-btn"
-            class="hidden mt-6 py-3 px-6 text-lg font-bold rounded-full btn-secondary w-full"
-          >
-            <span>🎙️</span> เล่าเรื่องต่อสิ!
-          </button>
+          <div class="mt-6 space-y-4">
+            <button
+              id="continue-story-btn"
+              class="hidden py-3 px-6 text-lg font-bold rounded-full btn-secondary w-full"
+            >
+              <span>🎙️</span> เล่าเรื่องต่อสิ!
+            </button>
+            <button
+              class="reset-button hidden w-full text-center"
+              id="story-reset-btn"
+            >
+              เริ่มการผจญภัยใหม่
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -226,6 +247,8 @@
       const storyParagraph = document.getElementById("story-paragraph");
       const continueStoryBtn = document.getElementById("continue-story-btn");
       const timerDisplay = document.getElementById("timer-display");
+      const storyResetBtn = document.getElementById("story-reset-btn");
+      const resetButtons = document.querySelectorAll(".reset-button"); // Get all reset buttons
 
       // App State
       const wordList = [
@@ -257,7 +280,6 @@
 
       // Functions
       function speak(text) {
-        // Cancel any previous speech to prevent overlap
         synth.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = "th-TH";
@@ -323,7 +345,6 @@
           (w) => !collectedWords.includes(w)
         );
         if (remainingWords.length === 0) {
-          // Reset if all words are learned
           localStorage.clear();
           collectedWords = [];
         }
@@ -345,6 +366,12 @@
         }
       }
 
+      function showVocabView() {
+        bridgeView.classList.add("hidden");
+        storyView.classList.add("hidden");
+        vocabView.classList.remove("hidden");
+      }
+
       function showBridgeView() {
         vocabView.classList.add("hidden");
         storyView.classList.add("hidden");
@@ -359,7 +386,6 @@
         });
       }
 
-      // MODIFIED: Enhanced feedback function
       function handleCorrectAnswer() {
         if (!collectedWords.includes(currentWord)) {
           collectedWords.push(currentWord);
@@ -380,7 +406,6 @@
         }, 1500);
       }
 
-      // MODIFIED: Enhanced feedback function
       function handleWrongAnswer(transcript) {
         feedbackText.textContent = `ลองอีกครั้งนะ (ได้ยินว่า: ${transcript})`;
         feedbackText.className =
@@ -390,6 +415,16 @@
           () => feedbackText.classList.remove("feedback-animation"),
           { once: true }
         );
+      }
+
+      function resetProgress() {
+        localStorage.removeItem("imagitale_words_th");
+        collectedWords = [];
+        updateProgress();
+        loadNextWord();
+        showVocabView(); // Go back to the main screen
+        feedbackText.textContent = "เริ่มต้นใหม่! มาสะสมคำศัพท์กัน";
+        feedbackText.className = "text-xl h-8 mb-6 font-bold text-gray-500";
       }
 
       async function callGeminiAPI(prompt) {
@@ -451,11 +486,22 @@
           .join(", ");
         const storyPrompt = `ช่วยแต่งนิทานภาษาไทยที่สั้น ง่าย และสนุกสนานสำหรับเด็กอายุ 5 ขวบ โดยในนิทานต้องมีคำศัพท์ 5 คำนี้อยู่ด้วย: ${storyKeywords} และตอนจบนิทานควรมีคำถามปลายเปิดเพื่อให้เด็กได้ตอบ`;
 
+        // Reset and show loaders
+        storyParagraph.textContent = "";
+        storyImage.src = "";
+        storyLoader.classList.remove("hidden");
+        storyContent.classList.add("hidden");
+        imageLoader.classList.remove("hidden");
+        storyImage.classList.add("hidden");
+        continueStoryBtn.classList.add("hidden");
+        storyResetBtn.classList.add("hidden");
+
         const storyText = await callGeminiAPI(storyPrompt);
         storyParagraph.textContent = storyText;
         storyLoader.classList.add("hidden");
         storyContent.classList.remove("hidden");
         continueStoryBtn.classList.remove("hidden");
+        storyResetBtn.classList.remove("hidden");
 
         const imagePrompt = `A cute, vibrant, cartoon-style illustration for a children's book. The scene should be based on this story: "${storyText}". Simple background, happy characters.`;
         const imageUrl = await callImagenAPI(imagePrompt);
@@ -475,6 +521,10 @@
         disableButtons();
         recognition.start();
       });
+
+      resetButtons.forEach((btn) =>
+        btn.addEventListener("click", resetProgress)
+      );
 
       recognition.onstart = () => {
         startTimer();
@@ -531,12 +581,17 @@
       });
 
       // Initial Load
-      loadCollectedWords();
-      if (collectedWords.length < wordsToCollect) {
-        loadNextWord();
-      } else {
-        showBridgeView();
+      function initializeApp() {
+        loadCollectedWords();
+        if (collectedWords.length >= wordsToCollect) {
+          showBridgeView();
+        } else {
+          showVocabView();
+          loadNextWord();
+        }
       }
+
+      initializeApp();
     </script>
   </body>
 </html>
