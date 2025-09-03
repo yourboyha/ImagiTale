@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ImagiTale - MVP Prototype (Fixed Reset Button)</title>
+    <title>ImagiTale - MVP Prototype (with Audio Feedback)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -168,7 +168,6 @@
         >
           🚀 สร้างนิทานเลย!
         </button>
-        <br />
         <button class="reset-button">หรือจะเริ่มสะสมคำศัพท์ชุดใหม่?</button>
       </div>
       <div
@@ -249,7 +248,7 @@
       const continueStoryBtn = document.getElementById("continue-story-btn");
       const timerDisplay = document.getElementById("timer-display");
       const storyResetBtn = document.getElementById("story-reset-btn");
-      const resetButtons = document.querySelectorAll(".reset-button"); // Get all reset buttons
+      const resetButtons = document.querySelectorAll(".reset-button");
 
       // App State
       const wordList = [
@@ -361,7 +360,6 @@
         progressBar.style.width = `${progress}%`;
         progressBar.textContent = `${collectedWords.length}/${wordsToCollect}`;
         progressText.textContent = `สะสมครบ ${collectedWords.length}/${wordsToCollect} คำแล้ว!`;
-
         if (collectedWords.length >= wordsToCollect) {
           showBridgeView();
         }
@@ -401,6 +399,7 @@
           () => feedbackText.classList.remove("feedback-animation"),
           { once: true }
         );
+        speak("เก่งมาก"); // MODIFIED: Added audio feedback
 
         setTimeout(() => {
           if (collectedWords.length < wordsToCollect) loadNextWord();
@@ -416,6 +415,7 @@
           () => feedbackText.classList.remove("feedback-animation"),
           { once: true }
         );
+        speak("ลองอีกครั้งนะ"); // MODIFIED: Added audio feedback
       }
 
       function resetProgress() {
@@ -423,7 +423,7 @@
         collectedWords = [];
         updateProgress();
         loadNextWord();
-        showVocabView(); // Go back to the main screen
+        showVocabView();
         feedbackText.textContent = "เริ่มต้นใหม่! มาสะสมคำศัพท์กัน";
         feedbackText.className = "text-xl h-8 mb-6 font-bold text-gray-500";
       }
@@ -487,7 +487,6 @@
           .join(", ");
         const storyPrompt = `ช่วยแต่งนิทานภาษาไทยที่สั้น ง่าย และสนุกสนานสำหรับเด็กอายุ 5 ขวบ โดยในนิทานต้องมีคำศัพท์ 5 คำนี้อยู่ด้วย: ${storyKeywords} และตอนจบนิทานควรมีคำถามปลายเปิดเพื่อให้เด็กได้ตอบ`;
 
-        // Reset and show loaders
         storyParagraph.textContent = "";
         storyImage.src = "";
         storyLoader.classList.remove("hidden");
@@ -581,7 +580,6 @@
         alert("ฟีเจอร์เล่าเรื่องต่อจะมาในเวอร์ชันเต็มนะครับ!");
       });
 
-      // Initial Load
       function initializeApp() {
         loadCollectedWords();
         if (collectedWords.length >= wordsToCollect) {
