@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ImagiTale - MVP Prototype (Thai)</title>
+    <title>ImagiTale - MVP Prototype</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -14,18 +14,22 @@
     <style>
       body {
         font-family: "Sarabun", "Poppins", sans-serif;
-        background-color: #fff8e1; /* Energetic & Playful Palette - Background */
+        background-color: #fff8e1;
       }
       .btn-primary {
-        background-color: #ff6b6b; /* Energetic & Playful - Red */
+        background-color: #ff6b6b;
         color: white;
         transition: background-color 0.3s;
       }
       .btn-primary:hover {
         background-color: #ff4f4f;
       }
+      .btn-primary:disabled {
+        background-color: #fca5a5;
+        cursor: not-allowed;
+      }
       .btn-secondary {
-        background-color: #4ecdc4; /* Energetic & Playful - Teal */
+        background-color: #4ecdc4;
         color: white;
         transition: background-color 0.3s;
       }
@@ -36,7 +40,7 @@
         background-color: white;
         border-radius: 1.5rem;
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
-        border: 2px solid #1a535c; /* Energetic & Playful - Dark Teal */
+        border: 2px solid #1a535c;
       }
       .text-main {
         color: #1a535c;
@@ -73,7 +77,7 @@
   </head>
   <body class="flex items-center justify-center min-h-screen p-4">
     <div id="app-container" class="w-full max-w-4xl mx-auto">
-      <!-- ===== VOCAB TRAINER VIEW ===== -->
+      <!-- VIEWS WILL BE RENDERED HERE -->
       <div id="vocab-trainer-view" class="text-center p-6 md:p-10 card">
         <h1 class="text-3xl md:text-4xl font-bold text-main mb-2">
           ด่านที่ 1: นักสะสมคำศัพท์
@@ -81,8 +85,7 @@
         <p class="text-gray-500 mb-8">
           ฝึกพูดคำศัพท์ให้ถูกต้อง เพื่อปลดล็อกโลกนิทาน!
         </p>
-
-        <div id="word-display-card" class="bg-yellow-100 p-8 rounded-2xl mb-8">
+        <div id="word-display-card" class="bg-yellow-100 p-8 rounded-2xl mb-6">
           <h2
             id="current-word"
             class="text-5xl md:text-7xl font-bold text-main tracking-wider"
@@ -91,7 +94,12 @@
           </h2>
         </div>
 
-        <div class="flex flex-col md:flex-row gap-4 justify-center mb-8">
+        <div
+          id="timer-display"
+          class="text-4xl font-bold text-accent h-12 mb-4"
+        ></div>
+
+        <div class="flex flex-col md:flex-row gap-4 justify-center mb-6">
           <button
             id="listen-btn"
             class="py-4 px-8 text-xl font-bold rounded-full btn-secondary w-full md:w-auto"
@@ -105,9 +113,7 @@
             <span>🎙️</span> พูดเลย!
           </button>
         </div>
-
         <p id="feedback-text" class="text-xl h-8 mb-6 text-gray-600"></p>
-
         <div class="w-full bg-gray-200 rounded-full h-8">
           <div
             id="progress-bar"
@@ -119,8 +125,6 @@
           สะสมครบ 0/5 คำแล้ว!
         </p>
       </div>
-
-      <!-- ===== THE BRIDGE VIEW ===== -->
       <div id="bridge-view" class="hidden text-center p-10 card fade-in">
         <h1 class="text-4xl font-bold text-accent mb-4">ปลดล็อกสำเร็จ!</h1>
         <p class="text-xl text-gray-600 mb-8">
@@ -137,8 +141,6 @@
           🚀 สร้างนิทานเลย!
         </button>
       </div>
-
-      <!-- ===== STORY VIEW ===== -->
       <div
         id="story-view"
         class="hidden grid grid-cols-1 lg:grid-cols-2 gap-8 items-center p-6 md:p-10 card fade-in"
@@ -180,13 +182,6 @@
     </div>
 
     <script>
-      // =======================================================
-      // ========== CONFIGURATION - PLEASE EDIT ==========
-      // =======================================================
-      const GEMINI_API_KEY = " ";
-      const IMAGEN_API_KEY = " ";
-      // =======================================================
-
       // DOM Elements
       const vocabView = document.getElementById("vocab-trainer-view");
       const bridgeView = document.getElementById("bridge-view");
@@ -207,6 +202,7 @@
       const storyContent = document.getElementById("story-content");
       const storyParagraph = document.getElementById("story-paragraph");
       const continueStoryBtn = document.getElementById("continue-story-btn");
+      const timerDisplay = document.getElementById("timer-display");
 
       // App State
       const wordList = [
@@ -224,16 +220,58 @@
       let currentWord = "";
       let collectedWords = [];
       const wordsToCollect = 5;
+      let countdownTimer;
+      let timeLeft = 10;
 
       // Web Speech API
       const synth = window.speechSynthesis;
       const SpeechRecognition =
         window.SpeechRecognition || window.webkitSpeechRecognition;
       const recognition = new SpeechRecognition();
-      recognition.lang = "th-TH"; // Set language to Thai
-      recognition.interimResults = false;
+      recognition.lang = "th-TH";
+      recognition.interimResults = true;
+      recognition.continuous = false;
 
       // Functions
+      function speak(text) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "th-TH";
+        synth.speak(utterance);
+      }
+
+      function startTimer() {
+        timeLeft = 10;
+        timerDisplay.textContent = timeLeft;
+        countdownTimer = setInterval(() => {
+          timeLeft--;
+          timerDisplay.textContent = timeLeft;
+          if (timeLeft <= 0) {
+            clearInterval(countdownTimer);
+            recognition.stop();
+            timerDisplay.textContent = "";
+            feedbackText.textContent = "หมดเวลา! ลองอีกครั้งนะ";
+            feedbackText.className = "text-xl h-8 mb-6 text-red-500";
+            speak("หมดเวลา");
+            enableButtons();
+          }
+        }, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(countdownTimer);
+        timerDisplay.textContent = "";
+      }
+
+      function disableButtons() {
+        speakBtn.disabled = true;
+        listenBtn.disabled = true;
+      }
+
+      function enableButtons() {
+        speakBtn.disabled = false;
+        listenBtn.disabled = false;
+      }
+
       function loadCollectedWords() {
         const savedWords = localStorage.getItem("imagitale_words_th");
         if (savedWords) {
@@ -268,7 +306,6 @@
         progressBar.style.width = `${progress}%`;
         progressBar.textContent = `${collectedWords.length}/${wordsToCollect}`;
         progressText.textContent = `สะสมครบ ${collectedWords.length}/${wordsToCollect} คำแล้ว!`;
-
         if (collectedWords.length >= wordsToCollect) {
           showBridgeView();
         }
@@ -295,72 +332,60 @@
           updateProgress();
         }
         feedbackText.textContent = `เยี่ยมมาก! "${currentWord}" ถูกต้อง`;
-        feedbackText.classList.remove("text-red-500");
-        feedbackText.classList.add("text-green-500");
+        feedbackText.className = "text-xl h-8 mb-6 text-green-500";
         setTimeout(() => {
           if (collectedWords.length < wordsToCollect) loadNextWord();
         }, 1500);
       }
 
       function handleWrongAnswer(transcript) {
-        feedbackText.textContent = `เกือบถูกแล้ว! ลองอีกครั้งนะ (คุณพูดว่า: ${transcript})`;
-        feedbackText.classList.remove("text-green-500");
-        feedbackText.classList.add("text-red-500");
+        feedbackText.textContent = `เกือบถูกแล้ว! (ระบบได้ยินว่า: ${transcript})`;
+        feedbackText.className = "text-xl h-8 mb-6 text-red-500";
+      }
+
+      // =======================================================
+      // ========== SECURE API CALLS VIA NETLIFY ==========
+      // =======================================================
+      async function callAI(type, prompt) {
+        try {
+          // This is the URL to our Netlify function.
+          const response = await fetch("/.netlify/functions/callAI", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type, prompt }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || "Serverless function failed");
+          }
+          return data;
+        } catch (error) {
+          console.error(`Error calling AI via function:`, error);
+          return { error: { message: error.message } };
+        }
       }
 
       async function callGeminiAPI(prompt) {
-        if (GEMINI_API_KEY === " ") {
-          return "กรุณาใส่ Gemini API Key ในโค้ดก่อนครับ";
+        const data = await callAI("gemini", prompt);
+        if (data.error) {
+          return `เกิดข้อผิดพลาดในการเรียก Gemini: ${data.error.message}`;
         }
-        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${GEMINI_API_KEY}`;
-        try {
-          const response = await fetch(API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-          });
-          if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error.message);
-          }
-          const data = await response.json();
-          return data.candidates[0].content.parts[0].text;
-        } catch (error) {
-          console.error("Gemini API Error:", error);
-          return `เกิดข้อผิดพลาดในการเรียก Gemini: ${error.message}`;
-        }
+        return data.candidates[0].content.parts[0].text;
       }
 
       async function callImagenAPI(prompt) {
-        if (IMAGEN_API_KEY === " ") {
-          return "https://placehold.co/512x512/FFE0B2/1A535C?text=Please+Add+API+Key";
-        }
-        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${IMAGEN_API_KEY}`;
-        try {
-          const response = await fetch(API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              instances: [{ prompt: prompt }],
-              parameters: { sampleCount: 1 },
-            }),
-          });
-
-          if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error.message);
-          }
-          const data = await response.json();
-          if (data.predictions && data.predictions.length > 0) {
-            return `data:image/png;base64,${data.predictions[0].bytesBase64Encoded}`;
-          } else {
-            throw new Error("No image data returned from API.");
-          }
-        } catch (error) {
-          console.error("Imagen API Error:", error);
+        const data = await callAI("imagen", prompt);
+        if (data.error) {
           return `https://placehold.co/512x512/FFCDD2/B71C1C?text=API+Error`;
         }
+        if (data.predictions && data.predictions.length > 0) {
+          return `data:image/png;base64,${data.predictions[0].bytesBase64Encoded}`;
+        }
+        return `https://placehold.co/512x512/FFCDD2/B71C1C?text=No+Image`;
       }
+      // =======================================================
 
       async function generateStory() {
         vocabView.classList.add("hidden");
@@ -372,6 +397,13 @@
           .join(", ");
         const storyPrompt = `ช่วยแต่งนิทานภาษาไทยที่สั้น ง่าย และสนุกสนานสำหรับเด็กอายุ 5 ขวบ โดยในนิทานต้องมีคำศัพท์ 5 คำนี้อยู่ด้วย: ${storyKeywords} และตอนจบนิทานควรมีคำถามปลายเปิดเพื่อให้เด็กได้ตอบ`;
 
+        // Show loaders
+        storyLoader.classList.remove("hidden");
+        storyContent.classList.add("hidden");
+        imageLoader.classList.remove("hidden");
+        storyImage.classList.add("hidden");
+
+        // Call APIs
         const storyText = await callGeminiAPI(storyPrompt);
         storyParagraph.textContent = storyText;
         storyLoader.classList.add("hidden");
@@ -387,30 +419,62 @@
 
       // Event Listeners
       listenBtn.addEventListener("click", () => {
-        const utterance = new SpeechSynthesisUtterance(currentWord);
-        utterance.lang = "th-TH"; // Set language to Thai
-        synth.speak(utterance);
+        speak(currentWord);
       });
 
       speakBtn.addEventListener("click", () => {
         feedbackText.textContent = "กำลังฟังอยู่จ้า...";
+        feedbackText.className = "text-xl h-8 mb-6 text-gray-500";
+        disableButtons();
         recognition.start();
       });
 
+      recognition.onstart = () => {
+        startTimer();
+      };
+
       recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript
-          .replace(/[\.\,\?]/g, "")
-          .trim();
-        if (transcript === currentWord) {
-          handleCorrectAnswer();
-        } else {
-          handleWrongAnswer(transcript);
+        let interimTranscript = "";
+        let finalTranscript = "";
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+
+        feedbackText.textContent = `กำลังได้ยินว่า: "${interimTranscript}"`;
+
+        if (finalTranscript) {
+          stopTimer();
+          feedbackText.textContent = `ได้ยินว่า: "${finalTranscript}" ...กำลังประมวลผล`;
+
+          setTimeout(() => {
+            const cleanedTranscript = finalTranscript
+              .replace(/[\.\,\?]/g, "")
+              .trim();
+            if (cleanedTranscript === currentWord) {
+              handleCorrectAnswer();
+            } else {
+              handleWrongAnswer(cleanedTranscript);
+            }
+          }, 1000);
         }
       };
 
       recognition.onerror = (event) => {
-        feedbackText.textContent =
-          "อุ๊ปส์! ไม่ได้ยินเสียงเลย ลองใหม่อีกครั้งนะ";
+        stopTimer();
+        if (event.error !== "no-speech") {
+          feedbackText.textContent = "อุ๊ปส์! เกิดข้อผิดพลาดบางอย่าง";
+        }
+        enableButtons();
+      };
+
+      recognition.onend = () => {
+        stopTimer();
+        enableButtons();
       };
 
       createStoryBtn.addEventListener("click", generateStory);
