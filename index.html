@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ImagiTale - Production Version</title>
+    <title>ImagiTale - with Poster Bridge</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -91,18 +91,39 @@
       .reset-button {
         margin-top: 1.5rem;
         font-size: 0.875rem;
-        color: #9ca3af; /* gray-400 */
+        color: #9ca3af;
         text-decoration: underline;
         transition: color 0.3s;
       }
       .reset-button:hover {
-        color: #ef4444; /* red-500 */
+        color: #ef4444;
+      }
+      /* Typewriter Effect */
+      #story-paragraph-content {
+        white-space: pre-wrap;
+        letter-spacing: 0.05em;
+      }
+      #story-cursor {
+        display: inline-block;
+        width: 8px;
+        height: 1.5rem;
+        background-color: #ff6b6b;
+        animation: blink-caret 0.75s step-end infinite;
+      }
+      @keyframes blink-caret {
+        from,
+        to {
+          background-color: transparent;
+        }
+        50% {
+          background-color: #ff6b6b;
+        }
       }
     </style>
   </head>
   <body class="flex items-center justify-center min-h-screen p-4">
     <div id="app-container" class="w-full max-w-4xl mx-auto">
-      <!-- VIEWS WILL BE RENDERED HERE -->
+      <!-- Vocab Trainer View -->
       <div id="vocab-trainer-view" class="text-center p-6 md:p-10 card">
         <h1 class="text-3xl md:text-4xl font-bold text-main mb-2">
           ด่านที่ 1: นักสะสมคำศัพท์
@@ -153,23 +174,38 @@
         <button class="reset-button">เริ่มสะสมใหม่ทั้งหมด</button>
       </div>
 
+      <!-- Bridge View -->
       <div id="bridge-view" class="hidden text-center p-10 card fade-in">
         <h1 class="text-4xl font-bold text-accent mb-4">ปลดล็อกสำเร็จ!</h1>
         <p class="text-xl text-gray-600 mb-8">
-          คุณได้รวบรวมคำศัพท์วิเศษครบแล้ว พร้อมจะสร้างนิทานของคุณเองหรือยัง?
+          โปสเตอร์การผจญภัยของคุณพร้อมแล้ว!
         </p>
+        <!-- NEW: Poster Display Area -->
         <div
-          id="collected-words-display"
-          class="flex flex-wrap gap-4 justify-center mb-8 text-2xl font-semibold"
-        ></div>
+          id="poster-container"
+          class="w-full max-w-md mx-auto aspect-square bg-gray-200 rounded-2xl flex items-center justify-center mb-8"
+        >
+          <div id="poster-loader" class="text-center">
+            <p class="text-2xl text-main mb-2">🖼️</p>
+            <p class="text-xl text-gray-500 pulse">กำลังสร้างโปสเตอร์...</p>
+          </div>
+          <img
+            id="bridge-poster-image"
+            src=""
+            class="hidden w-full h-full object-cover rounded-2xl"
+            alt="Personalized story poster"
+          />
+        </div>
         <button
           id="create-story-btn"
           class="py-4 px-12 text-2xl font-bold rounded-full btn-primary animate-bounce"
         >
-          🚀 สร้างนิทานเลย!
+          🚀 เริ่มการผจญภัยเลย!
         </button>
         <button class="reset-button">หรือจะเริ่มสะสมคำศัพท์ชุดใหม่?</button>
       </div>
+
+      <!-- Story View -->
       <div
         id="story-view"
         class="hidden grid grid-cols-1 lg:grid-cols-2 gap-8 items-center p-6 md:p-10 card fade-in"
@@ -180,7 +216,9 @@
         >
           <div id="image-loader" class="text-center">
             <p class="text-2xl text-main mb-2">🎨</p>
-            <p class="text-xl text-gray-500 pulse">AI กำลังวาดรูป...</p>
+            <p class="text-xl text-gray-500 pulse">
+              ศิลปินกำลังใช้จินตนาการ...
+            </p>
           </div>
           <img
             id="story-image"
@@ -192,13 +230,18 @@
         <div id="story-text-container" class="flex flex-col h-full">
           <div id="story-loader" class="text-center m-auto">
             <p class="text-2xl text-main mb-2">✍️</p>
-            <p class="text-xl text-gray-500 pulse">AI กำลังแต่งเรื่อง...</p>
+            <p class="text-xl text-gray-500 pulse">
+              นักเขียนกำลังแต่งเรื่อง...
+            </p>
           </div>
           <div
             id="story-content"
             class="hidden prose lg:prose-xl text-main flex-grow overflow-y-auto"
           >
-            <p id="story-paragraph"></p>
+            <div id="story-paragraph">
+              <span id="story-paragraph-content"></span
+              ><span id="story-cursor"></span>
+            </div>
           </div>
           <div class="mt-6 space-y-4">
             <button
@@ -233,11 +276,17 @@
       const collectedWordsDisplay = document.getElementById(
         "collected-words-display"
       );
+      const posterLoader = document.getElementById("poster-loader");
+      const bridgePosterImage = document.getElementById("bridge-poster-image");
       const imageLoader = document.getElementById("image-loader");
       const storyLoader = document.getElementById("story-loader");
       const storyImage = document.getElementById("story-image");
       const storyContent = document.getElementById("story-content");
       const storyParagraph = document.getElementById("story-paragraph");
+      const storyParagraphContent = document.getElementById(
+        "story-paragraph-content"
+      );
+      const storyCursor = document.getElementById("story-cursor");
       const continueStoryBtn = document.getElementById("continue-story-btn");
       const timerDisplay = document.getElementById("timer-display");
       const storyResetBtn = document.getElementById("story-reset-btn");
@@ -261,6 +310,7 @@
       const wordsToCollect = 5;
       let countdownTimer;
       let timeLeft = 10;
+      let bridgePosterUrl = null; // NEW: State for poster image URL
 
       // Web Speech API
       const synth = window.speechSynthesis;
@@ -323,6 +373,8 @@
         if (savedWords) {
           collectedWords = JSON.parse(savedWords);
         }
+        // Load poster URL as well
+        bridgePosterUrl = localStorage.getItem("imagitale_poster_url_th");
         updateProgress();
       }
 
@@ -338,8 +390,8 @@
           (w) => !collectedWords.includes(w)
         );
         if (remainingWords.length === 0) {
-          localStorage.clear();
-          collectedWords = [];
+          resetProgress(); // Reset if all words are used
+          return;
         }
         const randomIndex = Math.floor(Math.random() * remainingWords.length);
         currentWord = remainingWords[randomIndex];
@@ -368,14 +420,40 @@
         vocabView.classList.add("hidden");
         storyView.classList.add("hidden");
         bridgeView.classList.remove("hidden");
-        collectedWordsDisplay.innerHTML = "";
-        collectedWords.slice(0, wordsToCollect).forEach((word) => {
-          const wordChip = document.createElement("span");
-          wordChip.className =
-            "bg-yellow-200 text-yellow-800 py-2 px-4 rounded-full";
-          wordChip.textContent = word;
-          collectedWordsDisplay.appendChild(wordChip);
-        });
+
+        // NEW: Show poster logic
+        if (bridgePosterUrl) {
+          bridgePosterImage.src = bridgePosterUrl;
+          bridgePosterImage.classList.remove("hidden");
+          posterLoader.classList.add("hidden");
+        } else {
+          bridgePosterImage.classList.add("hidden");
+          posterLoader.classList.remove("hidden");
+          // If poster is not ready, generate it now
+          if (collectedWords.length >= wordsToCollect) {
+            generateBridgePosterInBackground();
+          }
+        }
+      }
+
+      // NEW: Function to generate poster in the background
+      async function generateBridgePosterInBackground() {
+        const posterKeywords = collectedWords
+          .slice(0, wordsToCollect)
+          .join(", ");
+        const posterPrompt = `A vibrant and whimsical children's book cover poster. It features cute cartoon versions of these characters: ${posterKeywords}. The style is joyful, colorful, and simple. Title text is not needed.`;
+
+        const imageUrl = await callImagenAPI(posterPrompt);
+        if (!imageUrl.includes("API+Error") && !imageUrl.includes("No+Image")) {
+          bridgePosterUrl = imageUrl;
+          localStorage.setItem("imagitale_poster_url_th", bridgePosterUrl);
+          // If bridge view is already visible, update the image
+          if (!bridgeView.classList.contains("hidden")) {
+            bridgePosterImage.src = bridgePosterUrl;
+            bridgePosterImage.classList.remove("hidden");
+            posterLoader.classList.add("hidden");
+          }
+        }
       }
 
       function handleCorrectAnswer() {
@@ -383,6 +461,8 @@
           collectedWords.push(currentWord);
           saveCollectedWords();
           updateProgress();
+          // Generate a new poster in the background
+          generateBridgePosterInBackground();
         }
         feedbackText.textContent = "เก่งมาก!";
         feedbackText.className =
@@ -413,7 +493,9 @@
 
       function resetProgress() {
         localStorage.removeItem("imagitale_words_th");
+        localStorage.removeItem("imagitale_poster_url_th"); // NEW: Clear poster
         collectedWords = [];
+        bridgePosterUrl = null; // NEW: Reset poster state
         updateProgress();
         loadNextWord();
         showVocabView();
@@ -421,9 +503,24 @@
         feedbackText.className = "text-xl h-8 mb-6 font-bold text-gray-500";
       }
 
-      // =======================================================
-      // ========== SECURE API CALLS VIA NETLIFY ==========
-      // =======================================================
+      function typeWriter(element, text, speed = 50) {
+        element.innerHTML = "";
+        let i = 0;
+        const cursor = document.getElementById("story-cursor");
+        cursor.style.display = "inline-block";
+
+        function typing() {
+          if (i < text.length) {
+            element.innerHTML += text.charAt(i);
+            i++;
+            setTimeout(typing, speed);
+          } else {
+            cursor.style.display = "none";
+          }
+        }
+        typing();
+      }
+
       async function callAI(type, prompt) {
         try {
           const response = await fetch("/.netlify/functions/callAI", {
@@ -431,9 +528,7 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ type, prompt }),
           });
-
           const data = await response.json();
-
           if (!response.ok) {
             throw new Error(data.error || "Serverless function failed");
           }
@@ -457,44 +552,52 @@
         if (data.error) {
           return `https://placehold.co/512x512/FFCDD2/B71C1C?text=API+Error`;
         }
-        if (data.predictions && data.predictions.length > 0) {
-          return `data:image/png;base64,${data.predictions[0].bytesBase64Encoded}`;
+        const base64Data =
+          data?.predictions?.[0]?.bytesBase64Encoded ||
+          data?.candidates?.[0]?.content?.parts?.find((p) => p.inlineData)
+            ?.inlineData?.data;
+        if (base64Data) {
+          return `data:image/png;base64,${base64Data}`;
         }
         return `https://placehold.co/512x512/FFCDD2/B71C1C?text=No+Image`;
       }
-      // =======================================================
 
       async function generateStory() {
         vocabView.classList.add("hidden");
         bridgeView.classList.add("hidden");
         storyView.classList.remove("hidden");
 
+        storyParagraphContent.innerHTML = "";
+        storyImage.src = "";
+        storyImage.classList.add("hidden");
+        storyLoader.classList.remove("hidden");
+        imageLoader.classList.remove("hidden");
+        storyContent.classList.add("hidden");
+        continueStoryBtn.classList.add("hidden");
+        storyResetBtn.classList.add("hidden");
+
         const storyKeywords = collectedWords
           .slice(0, wordsToCollect)
           .join(", ");
         const storyPrompt = `ช่วยแต่งนิทานภาษาไทยที่สั้น ง่าย และสนุกสนานสำหรับเด็กอายุ 5 ขวบ โดยในนิทานต้องมีคำศัพท์ 5 คำนี้อยู่ด้วย: ${storyKeywords} และตอนจบนิทานควรมีคำถามปลายเปิดเพื่อให้เด็กได้ตอบ`;
 
-        storyParagraph.textContent = "";
-        storyImage.src = "";
-        storyLoader.classList.remove("hidden");
-        storyContent.classList.add("hidden");
-        imageLoader.classList.remove("hidden");
-        storyImage.classList.add("hidden");
-        continueStoryBtn.classList.add("hidden");
-        storyResetBtn.classList.add("hidden");
+        const storyTextPromise = callGeminiAPI(storyPrompt);
 
-        const storyText = await callGeminiAPI(storyPrompt);
-        storyParagraph.textContent = storyText;
-        storyLoader.classList.add("hidden");
-        storyContent.classList.remove("hidden");
-        continueStoryBtn.classList.remove("hidden");
-        storyResetBtn.classList.remove("hidden");
+        storyTextPromise.then((storyText) => {
+          storyLoader.classList.add("hidden");
+          storyContent.classList.remove("hidden");
+          typeWriter(storyParagraphContent, storyText);
 
-        const imagePrompt = `A cute, vibrant, cartoon-style illustration for a children's book. The scene should be based on this story: "${storyText}". Simple background, happy characters.`;
-        const imageUrl = await callImagenAPI(imagePrompt);
-        storyImage.src = imageUrl;
-        imageLoader.classList.add("hidden");
-        storyImage.classList.remove("hidden");
+          const imagePrompt = `A cute, vibrant, whimsical cartoon-style illustration for a children's book. The scene is based on this story: "${storyText}". Simple background, happy and friendly characters, bright colors.`;
+          callImagenAPI(imagePrompt).then((imageUrl) => {
+            storyImage.src = imageUrl;
+            imageLoader.classList.add("hidden");
+            storyImage.classList.remove("hidden");
+            storyImage.classList.add("fade-in");
+            continueStoryBtn.classList.remove("hidden");
+            storyResetBtn.classList.remove("hidden");
+          });
+        });
       }
 
       // Event Listeners
